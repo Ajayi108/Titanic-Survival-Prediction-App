@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  web-frontend:
+    build: ./web-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - web-backend
+
+  web-backend:
+    build: ./web-backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - model-backend
+
+  model-backend:
+    build: ./model-backend
+    ports:
+      - "7000:7000"
