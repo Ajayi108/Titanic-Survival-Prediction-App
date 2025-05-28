@@ -1,3 +1,5 @@
+Start the docker `docker compose up --build` 
+
 # student-repo
  
 This repository was created for you as part of a course project. You are required to use this project for any course work and contact 
