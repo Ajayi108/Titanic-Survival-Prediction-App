@@ -1,11 +1,14 @@
 version: "3.9"
+
 services:
   web-frontend:
     build: ./web-frontend
     ports:
-      - "3000:3000"
+      - "8000:8000"
     depends_on:
       - web-backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
 
   web-backend:
     build: ./web-backend
@@ -13,8 +16,11 @@ services:
       - "5000:5000"
     depends_on:
       - model-backend
+    environment:
+      - MODEL_BACKEND_URL=http://model-backend:2000/predict
+      - MODEL_BACKEND_TRAIN_URL=http://model-backend:2000/train
 
   model-backend:
     build: ./model-backend
     ports:
-      - "7000:7000"
+      - "2000:2000"
