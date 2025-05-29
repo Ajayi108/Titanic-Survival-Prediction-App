@@ -1,3 +1,9 @@
+here’s the command that clones this repo and pulls all submodules in one shot:
+
+```
+git clone --recurse-submodules https://mygit.th-deg.de/schober-teaching/student-projects/ain-23-software-engineering/ss-25/IcebergAI/docker-compose
+```
+
 Start the docker `docker compose up --build` 
 
 # student-repo
