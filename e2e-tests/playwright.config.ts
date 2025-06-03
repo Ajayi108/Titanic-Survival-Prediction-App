@@ -4,7 +4,7 @@ export default defineConfig({
   timeout: 60000,
   testDir: "./tests",
   use: {
-    baseURL: "http://localhost:8080",
+    baseURL: "http://localhost:8000",
     browserName: "chromium",
     headless: true,
     screenshot: "only-on-failure",
