@@ -5,6 +5,7 @@ services:
     build: ./web-frontend
     ports:
       - "8000:8000"
+      - "8080:80"
     depends_on:
       - web-backend
     environment:
