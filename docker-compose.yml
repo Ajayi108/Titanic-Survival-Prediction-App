@@ -17,11 +17,31 @@ services:
       - "5000:5000"
     depends_on:
       - model-backend
+      - db
     environment:
       - MODEL_BACKEND_URL=http://model-backend:2000/predict
       - MODEL_BACKEND_TRAIN_URL=http://model-backend:2000/train
+      - DB_NAME=titanic_shrank_db
+      - DB_USER=titanic_saver
+      - DB_PASSWORD=TitanicMan
+      - DB_HOST=db
+      - DB_PORT=5432
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: titanic_shrank_db
+      POSTGRES_USER: titanic_saver
+      POSTGRES_PASSWORD: TitanicMan
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   model-backend:
     build: ./model-backend
     ports:
       - "2000:2000"
+
+volumes:
+  db-data:
