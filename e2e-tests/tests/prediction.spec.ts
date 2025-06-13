@@ -1,3 +1,5 @@
+// test for calculator page
+
 import { test, expect } from "@playwright/test";
 
 test.describe("Titanic Calculator Page", () => {
