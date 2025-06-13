@@ -1,7 +1,18 @@
 stages:
-  - check
+  - test
 
-placeholder_job:
-  stage: check
+e2e_playwright_tests:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.42.1-jammy
   script:
-    - echo "No CI checks required for this project"
+    - apt-get update && apt-get install -y curl
+    - cp .env.example .env || true
+    - docker-compose up -d --build
+    - echo "⏳ Waiting for app to be ready..."
+    - npx wait-on http://localhost:8080
+    - cd e2e-tests
+    - npx playwright install --with-deps
+    - npx playwright test
+    - docker-compose down
+  only:
+    - schedules
