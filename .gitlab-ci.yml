@@ -5,19 +5,25 @@ stages:
 placeholder_job:
   stage: check
   script:
-    - echo "No CI checks required for this project"
+    - echo "No checks needed; this is just a placeholder."
+  allow_failure: true
+  only:
+    - merge_requests
 
 nightly_e2e_tests:
   stage: test
   image: docker/compose:alpine-1.29.2
   services:
-    - docker:20.10.16-dind
+    - name: docker:20.10.16-dind
+      alias: docker
+      command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
   before_script:
-    - until docker info; do sleep 1; done
+    - docker info
+    - docker-compose up -d --build
+    - sleep 10
   script:
     - docker-compose run --rm playwright npx playwright test
   artifacts:
