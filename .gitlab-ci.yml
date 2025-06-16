@@ -1,5 +1,14 @@
 stages:
+  - check
   - test
+
+placeholder_job:
+  stage: check
+  script:
+    - echo "No checks needed; this is just a placeholder."
+  allow_failure: true
+  only:
+    - merge_requests
 
 nightly_e2e_tests:
   stage: test
