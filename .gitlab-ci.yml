@@ -9,6 +9,14 @@ placeholder_job:
 
 nightly_e2e_tests:
   stage: test
+  image: docker/compose:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   script:
     - docker-compose run --rm playwright npx playwright test
   artifacts:
@@ -16,7 +24,7 @@ nightly_e2e_tests:
     paths:
       - playwright-report/
       - test-results/
-    expire_in: 1 week
+    expire_in: 30 days
   only:
     - schedules
   allow_failure: true
