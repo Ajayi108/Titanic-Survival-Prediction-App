@@ -1,8 +1,9 @@
-version: "3.8"
+version: "3.9"
 
 services:
   web-frontend:
     build: ./web-frontend
+    image: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai/web-frontend:latest
     ports:
       - "8000:8000"
       - "8080:80"
@@ -13,6 +14,7 @@ services:
 
   web-backend:
     build: ./web-backend
+    image: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai/web-backend:latest
     ports:
       - "5000:5000"
     depends_on:
@@ -39,6 +41,7 @@ services:
       - "5432:5432"
 
   model-backend:
+    image: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai/model-backend:latest
     build: ./model-backend
     ports:
       - "2000:2000"
