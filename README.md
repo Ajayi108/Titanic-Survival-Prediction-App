@@ -7,7 +7,9 @@
 # To update the submodules to the latest version
 `git submodule update --init --remote`
 
-# To start the docker
+# To Build the docker
 `docker-compose build --no-cache`
+
+# To Start the docker
 `docker-compose up`
 
