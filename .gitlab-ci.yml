@@ -1,5 +1,6 @@
 stages:
   - test
+  - docker-test
   - build
 
 variables:
@@ -16,17 +17,62 @@ test_pipeline:
     - echo "Commit $CI_COMMIT_SHA"
     - echo "Branch $CI_COMMIT_BRANCH"
 
+# Test Docker connection
+docker_test:
+  stage: docker-test
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker info
+    - docker run hello-world
+    - echo "Docker is working!"
+
+# Test registry login
+registry_test:
+  stage: docker-test
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker info
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - echo "Registry login successful!"
+
+# Test building one service
+build_one_test:
+  stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - cd web-frontend
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:test .
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:test
+  when: manual
+
 .build_template: &build_template
   stage: build
   image: docker:20.10.16
   services:
     - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
   before_script:
     - docker info
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
     - if: $CI_COMMIT_BRANCH == "develop"
+      when: manual
   timeout: 30m
 
 build-web-frontend:
