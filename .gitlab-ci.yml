@@ -24,14 +24,44 @@ test_pipeline:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
   timeout: 30m
 
-build-web-frontend:
-  <<: *kaniko_build
+# Debug Kaniko build
+debug-kaniko:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   script:
+    - echo "=== Debugging Kaniko ==="
+    - ls -la
+    - ls -la web-frontend/ || echo "web-frontend directory not found"
+    - ls -la web-backend/ || echo "web-backend directory not found"  
+    - ls -la model-backend/ || echo "model-backend directory not found"
+    - echo "=== Checking Dockerfiles ==="
+    - cat web-frontend/Dockerfile || echo "web-frontend/Dockerfile not found"
+    - echo "=== Registry info ==="
+    - echo "Registry: $CI_REGISTRY"
+    - echo "Project: $CI_PROJECT_PATH"
+    - echo "Commit: $CI_COMMIT_SHA"
+  when: manual
+
+# Fixed Kaniko build for web-frontend
+build-web-frontend-fixed:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+  script:
+    - echo "Building web-frontend with Kaniko..."
+    - ls -la web-frontend/
     - /kaniko/executor
       --context $CI_PROJECT_DIR/web-frontend
       --dockerfile $CI_PROJECT_DIR/web-frontend/Dockerfile
       --destination $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
       --destination $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest
+      --verbosity=debug
   when: manual
 
 build-web-backend:
@@ -69,13 +99,42 @@ build-model-backend:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   timeout: 30m
 
-build-web-frontend-docker:
-  <<: *simple_build
+# Debug Docker daemon connection
+debug-docker:
+  stage: build
+  image: docker:latest
+  services:
+    - name: docker:dind
+      alias: dockerdaemon
+  variables:
+    DOCKER_HOST: tcp://dockerdaemon:2375
+    DOCKER_TLS_CERTDIR: ""
   script:
+    - echo "=== Docker Debug Info ==="
+    - echo "DOCKER_HOST: $DOCKER_HOST"
+    - ping -c 3 dockerdaemon || echo "Cannot ping dockerdaemon"
+    - nslookup dockerdaemon || echo "Cannot resolve dockerdaemon"
+    - netstat -an | grep 2375 || echo "Port 2375 not found"
+    - timeout 30 docker version || echo "Docker version failed"
+    - timeout 30 docker info || echo "Docker info failed"
+  when: manual
+
+# Simplified Docker build without waiting loop
+build-web-frontend-simple:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - sleep 10  # Give daemon time to start
+    - docker version
+    - docker info
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
     - cd web-frontend
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA .
     - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest .
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest
   when: manual
 
