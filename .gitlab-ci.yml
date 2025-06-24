@@ -1,48 +1,84 @@
 stages:
+  - test
   - build
 
 variables:
   DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
-  REGISTRY: $CI_REGISTRY
-  PROJECT_PATH: $CI_PROJECT_PATH
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: tcp://docker:2376
+
+# Simple test job to verify pipeline works
+test_pipeline:
+  stage: test
+  image: alpine:latest
+  script:
+    - echo "Pipeline is working!"
+    - echo "Commit: $CI_COMMIT_SHA"
+    - echo "Branch: $CI_COMMIT_BRANCH"
+  rules:
+    - if: $CI_COMMIT_BRANCH
 
 .build_template: &build_template
   stage: build
-  image: docker:24.0
+  image: docker:20.10.16
   services:
-    - docker:24.0-dind
+    - docker:20.10.16-dind
   before_script:
+    - docker info
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_BRANCH == "develop"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  timeout: 30m
 
 build-web-frontend:
   <<: *build_template
   script:
     - cd web-frontend
-    - docker build -t $REGISTRY/$PROJECT_PATH/web-frontend:$CI_COMMIT_SHA .
-    - docker build -t $REGISTRY/$PROJECT_PATH/web-frontend:latest .
-    - docker push $REGISTRY/$PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
-    - docker push $REGISTRY/$PROJECT_PATH/web-frontend:latest
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest .
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest
+  only:
+    variables:
+      - $BUILD_FRONTEND == "true"
 
 build-web-backend:
   <<: *build_template
   script:
     - cd web-backend
-    - docker build -t $REGISTRY/$PROJECT_PATH/web-backend:$CI_COMMIT_SHA .
-    - docker build -t $REGISTRY/$PROJECT_PATH/web-backend:latest .
-    - docker push $REGISTRY/$PROJECT_PATH/web-backend:$CI_COMMIT_SHA
-    - docker push $REGISTRY/$PROJECT_PATH/web-backend:latest
-
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest .
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest
+  only:
+    variables:
+      - $BUILD_BACKEND == "true"
 
 build-model-backend:
   <<: *build_template
   script:
     - cd model-backend
-    - docker build -t $REGISTRY/$PROJECT_PATH/model-backend:$CI_COMMIT_SHA .
-    - docker build -t $REGISTRY/$PROJECT_PATH/model-backend:latest .
-    - docker push $REGISTRY/$PROJECT_PATH/model-backend:$CI_COMMIT_SHA
-    - docker push $REGISTRY/$PROJECT_PATH/model-backend:latest
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest .
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest
+  only:
+    variables:
+      - $BUILD_MODEL == "true"
+
+# Build all services (manual trigger)
+build-all:
+  <<: *build_template
+  script:
+    - echo "Building all services..."
+    # Frontend
+    - cd web-frontend && docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA . && docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest . && cd ..
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA && docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest
+    # Backend
+    - cd web-backend && docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA . && docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest . && cd ..
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA && docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest
+    # Model
+    - cd model-backend && docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA . && docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest . && cd ..
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA && docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest
+  when: manual
