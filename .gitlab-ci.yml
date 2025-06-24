@@ -1,45 +1,20 @@
 stages:
   - build
 
-variables:
-  CI_REGISTRY: "registry.mygit.th-deg.de"
-  CI_REGISTRY_IMAGE: "${CI_REGISTRY}/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai"
-
-build-frontend:
-  stage: build
-  image: docker:24.0.7
+build_docker_images:
+  image: docker:latest
   services:
-    - docker:dind
+    - docker:20.10.7-dind  # Use a specific DIND version
   variables:
-    SERVICE_DIR: "frontend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-frontend:latest"
+    # Configure Docker to connect to DIND service
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""  # Disable TLS for simplicity
+  before_script:
+    # Install Docker Compose without using pip
+    - apk add --no-cache curl
+    - curl -L "https://github.com/docker/compose/releases/download/v2.25.0/docker-compose- $(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    - chmod +x /usr/local/bin/docker-compose
   script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
-    - docker push $IMAGE_NAME
-
-build-backend:
-  stage: build
-  image: docker:24.0.7
-  services:
-    - docker:dind
-  variables:
-    SERVICE_DIR: "backend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-backend:latest"
-  script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
-    - docker push $IMAGE_NAME
-
-build-model-backend:
-  stage: build
-  image: docker:24.0.7
-  services:
-    - docker:dind
-  variables:
-    SERVICE_DIR: "model-backend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/model-backend:latest"
-  script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
-    - docker push $IMAGE_NAME
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker-compose build
+    - docker-compose push
