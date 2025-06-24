@@ -1,16 +1,17 @@
+# .gitlab-ci.yml
+
 stages:
-  - build
+  - build  # ONLY the 'build' stage exists
 
 build_docker_images:
+  stage: build  # Explicitly assign to 'build'
   image: docker:latest
   services:
-    - docker:20.10.7-dind  # Use a specific DIND version
+    - docker:20.10.7-dind
   variables:
-    # Configure Docker to connect to DIND service
     DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""  # Disable TLS for simplicity
+    DOCKER_TLS_CERTDIR: ""
   before_script:
-    # Install Docker Compose without using pip
     - apk add --no-cache curl
     - curl -L "https://github.com/docker/compose/releases/download/v2.25.0/docker-compose- $(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     - chmod +x /usr/local/bin/docker-compose
