@@ -3,58 +3,74 @@ stages:
   - build
 
 variables:
-  DOCKER_DRIVER: overlay2
+  # GitLab Container Registry
+  CI_REGISTRY: "registry.mygit.th-deg.de"
+  CI_PROJECT_PATH: "schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai"
+  
+  # Docker-in-Docker (DinD) settings
+  DOCKER_HOST: tcp://localhost:2375  # Use localhost to avoid DNS issues
   DOCKER_TLS_CERTDIR: ""
-  DOCKER_HOST: tcp://docker:2376
+  DOCKER_DRIVER: overlay2
 
-# Simple test job to verify pipeline works
+# Test stage to verify pipeline works
 test_pipeline:
   stage: test
   image: alpine:latest
   script:
     - echo "Pipeline is working!"
-    - echo "Commit $CI_COMMIT_SHA"
-    - echo "Branch $CI_COMMIT_BRANCH"
+    - echo "Commit SHA: $CI_COMMIT_SHA"
+    - echo "Branch: $CI_COMMIT_BRANCH"
 
+# Reusable build template
 .build_template: &build_template
   stage: build
-  image: docker:20.10.16
+  image: docker:24.0.7
   services:
-    - docker:20.10.16-dind
+    - docker:24.0.7-dind
+  variables:
+    IMAGE_NAME: "$CI_REGISTRY/$CI_PROJECT_PATH"
   before_script:
+    - sleep 10  # Wait for DinD to initialize
     - docker info
-    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - echo "Logging into GitLab Container Registry"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_BRANCH == "develop"
   timeout: 30m
 
+# Build and push web-frontend
 build-web-frontend:
   <<: *build_template
   script:
     - cd web-frontend
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA .
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest .
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest
-  when: manual
+    - |
+      docker build -t "$IMAGE_NAME/web-frontend:$CI_COMMIT_SHA" .
+      docker build -t "$IMAGE_NAME/web-frontend:latest" .
+    - |
+      docker push "$IMAGE_NAME/web-frontend:$CI_COMMIT_SHA"
+      docker push "$IMAGE_NAME/web-frontend:latest"
 
+# Build and push web-backend
 build-web-backend:
   <<: *build_template
   script:
     - cd web-backend
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA .
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest .
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest
-  when: manual
+    - |
+      docker build -t "$IMAGE_NAME/web-backend:$CI_COMMIT_SHA" .
+      docker build -t "$IMAGE_NAME/web-backend:latest" .
+    - |
+      docker push "$IMAGE_NAME/web-backend:$CI_COMMIT_SHA"
+      docker push "$IMAGE_NAME/web-backend:latest"
 
+# Build and push model-backend
 build-model-backend:
   <<: *build_template
   script:
     - cd model-backend
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA .
-    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest .
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA
-    - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest
-  when: manual
+    - |
+      docker build -t "$IMAGE_NAME/model-backend:$CI_COMMIT_SHA" .
+      docker build -t "$IMAGE_NAME/model-backend:latest" .
+    - |
+      docker push "$IMAGE_NAME/model-backend:$CI_COMMIT_SHA"
+      docker push "$IMAGE_NAME/model-backend:latest"
