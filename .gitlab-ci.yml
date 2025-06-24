@@ -2,7 +2,6 @@ stages:
   - build
 
 variables:
-  DOCKER_HOST: tcp://docker:2375/
   DOCKER_TLS_CERTDIR: ""
   REGISTRY: registry.mygit.th-deg.de
   IMAGE_BASE: registry.mygit.th-deg.de/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
@@ -10,8 +9,7 @@ variables:
 .default:
   image: docker:latest
   services:
-    - name: docker:dind
-      alias: docker
+    - docker:dind
   before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY
 
