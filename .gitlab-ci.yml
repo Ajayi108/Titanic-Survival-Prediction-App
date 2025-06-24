@@ -1,7 +1,36 @@
 stages:
-  - check
+  - build
 
-placeholder_job:
-  stage: check
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_TLS_CERTDIR: ""
+  REGISTRY: registry.mygit.th-deg.de
+  IMAGE_BASE: registry.mygit.th-deg.de/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
+
+.default:
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY
+
+build_web_frontend:
+  extends: .default
+  stage: build
   script:
-    - echo "No CI checks required for this project"
+    - docker build -t $IMAGE_BASE/web-frontend:latest ./web-frontend
+    - docker push $IMAGE_BASE/web-frontend:latest
+
+build_web_backend:
+  extends: .default
+  stage: build
+  script:
+    - docker build -t $IMAGE_BASE/web-backend:latest ./web-backend
+    - docker push $IMAGE_BASE/web-backend:latest
+
+build_model_backend:
+  extends: .default
+  stage: build
+  script:
+    - docker build -t $IMAGE_BASE/model-backend:latest ./model-backend
+    - docker push $IMAGE_BASE/model-backend:latest
