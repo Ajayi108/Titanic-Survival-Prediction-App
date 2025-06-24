@@ -2,58 +2,25 @@ stages:
   - build
 
 variables:
-  # GitLab Container Registry URL
   CI_REGISTRY: "registry.mygit.th-deg.de"
-  # Project-specific image path
   CI_REGISTRY_IMAGE: "${CI_REGISTRY}/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai"
-  # Docker-in-Docker (DinD) settings
-  DOCKER_HOST: tcp://docker:2375
+  DOCKER_HOST: tcp://localhost:2375  # Use localhost instead of docker
   DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
 
-# Build and push web-frontend
-build-frontend:
+build-images:
   stage: build
   image: docker:24.0.7
   services:
-    - name: docker:dind
-      command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
-  variables:
-    SERVICE_DIR: "frontend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-frontend:latest"
+    - name: docker:24.0.7-dind
+      command: ["--host", "tcp://0.0.0.0:2375", "--storage-driver=overlay2"]
   script:
+    - sleep 5  # Wait for DinD to initialize
     - docker info
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
-    - docker push "$IMAGE_NAME"
-
-# Build and push web-backend
-build-backend:
-  stage: build
-  image: docker:24.0.7
-  services:
-    - name: docker:dind
-      command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
-  variables:
-    SERVICE_DIR: "backend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-backend:latest"
-  script:
-    - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
-    - docker push "$IMAGE_NAME"
-
-# Build and push model-backend
-build-model-backend:
-  stage: build
-  image: docker:24.0.7
-  services:
-    - name: docker:dind
-      command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
-  variables:
-    SERVICE_DIR: "model-backend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/model-backend:latest"
-  script:
-    - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
-    - docker push "$IMAGE_NAME"
+    - docker build -t "${CI_REGISTRY_IMAGE}/web-frontend:latest" "./frontend"
+    - docker build -t "${CI_REGISTRY_IMAGE}/web-backend:latest" "./backend"
+    - docker build -t "${CI_REGISTRY_IMAGE}/model-backend:latest" "./model-backend"
+    - docker push "${CI_REGISTRY_IMAGE}/web-frontend:latest"
+    - docker push "${CI_REGISTRY_IMAGE}/web-backend:latest"
+    - docker push "${CI_REGISTRY_IMAGE}/model-backend:latest"
