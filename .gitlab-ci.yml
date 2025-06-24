@@ -1,34 +1,14 @@
-image: docker:latest
-
-services:
-  - name: docker:dind
-    command: ["--host=tcp://0.0.0.0:2375", "--tls=false"]
-
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-  IMAGE_BASE: registry.gitlab.com/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
-
-before_script:
-  - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
-
 stages:
   - build
 
-build_frontend:
-  stage: build
+build_docker_images:
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - apk add --no-cache python3 py3-pip
+    - pip install docker-compose
   script:
-    - docker build -f ./frontend/Dockerfile -t $IMAGE_BASE/frontend:latest ./frontend
-    - docker push $IMAGE_BASE/frontend:latest
-
-build_model_backend:
-  stage: build
-  script:
-    - docker build -f ./model-backend/Dockerfile -t $IMAGE_BASE/model-backend:latest ./model-backend
-    - docker push $IMAGE_BASE/model-backend:latest
-
-build_backend:
-  stage: build
-  script:
-    - docker build -f ./backend/Dockerfile -t $IMAGE_BASE/backend:latest ./backend
-    - docker push $IMAGE_BASE/backend:latest
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker-compose build
+    - docker-compose push
