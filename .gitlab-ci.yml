@@ -2,51 +2,42 @@ stages:
   - build
 
 variables:
-  # Define the base image path for your container registry
   CI_IMAGE_PREFIX: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
-  # This variable is required to enable TLS communication between the Docker client and the dind service.
   DOCKER_TLS_CERTDIR: "/certs"
 
-# This template job defines the common steps for building and pushing Docker images.
-.build_and_push_template: &build_and_push_definition
-  stage: build
+# Define a hidden job to serve as a template
+.build_and_push_template:
   image: docker:latest
   services:
     - name: docker:dind
       alias: docker
   before_script:
-    # Wait for the Docker daemon to be ready.
     - while ! docker info; do sleep 1; done
-    # Log in to the GitLab container registry
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    # --- DEBUGGING STEP ---
-    # List all files in the project root directory. This helps verify the paths.
     - echo "Listing files in the project root: $CI_PROJECT_DIR"
     - ls -la "$CI_PROJECT_DIR"
     - echo "---------------------"
   script:
-    # Use the absolute path to the build context.
-    # $CI_PROJECT_DIR is a predefined GitLab variable (e.g., /builds/group/project)
-    # This command tells Docker the exact, unambiguous location of the build context directory.
     - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
-    # Push the Docker image to the container registry
     - docker push "$CI_REGISTRY_IMAGE"
 
 build-web-frontend:
-  # Inherit the common steps from the template
-  <<: *build_and_push_definition
-  variables: # Variables specific to this job
+  stage: build
+  extends: .build_and_push_template # Use extends to inherit the template
+  variables:
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-frontend:latest"
     BUILD_CONTEXT_DIR: "web-frontend"
 
 build-web-backend:
-  <<: *build_and_push_definition
-  variables: # Variables specific to this job
+  stage: build
+  extends: .build_and_push_template # Use extends to inherit the template
+  variables:
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-backend:latest"
     BUILD_CONTEXT_DIR: "web-backend"
 
 build-model-backend:
-  <<: *build_and_push_definition
-  variables: # Variables specific to this job
+  stage: build
+  extends: .build_and_push_template # Use extends to inherit the template
+  variables:
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/model-backend:latest"
     BUILD_CONTEXT_DIR: "model-backend"
