@@ -25,29 +25,28 @@ variables:
     - ls -la "$CI_PROJECT_DIR"
     - echo "---------------------"
   script:
-    # FINAL ATTEMPT: Use the absolute path to the build context.
+    # Use the absolute path to the build context.
     # $CI_PROJECT_DIR is a predefined GitLab variable (e.g., /builds/group/project)
     # This command tells Docker the exact, unambiguous location of the build context directory.
-    - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR" # Corrected variable name here
+    - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
     # Push the Docker image to the container registry
     - docker push "$CI_REGISTRY_IMAGE"
 
 build-web-frontend:
   # Inherit the common steps from the template
   <<: *build_and_push_definition
-  variables:
+  variables: # Variables specific to this job
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-frontend:latest"
-    # We now provide the directory name to be appended to the absolute project path.
     BUILD_CONTEXT_DIR: "web-frontend"
 
 build-web-backend:
   <<: *build_and_push_definition
-  variables:
+  variables: # Variables specific to this job
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-backend:latest"
     BUILD_CONTEXT_DIR: "web-backend"
 
 build-model-backend:
   <<: *build_and_push_definition
-  variables:
+  variables: # Variables specific to this job
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/model-backend:latest"
     BUILD_CONTEXT_DIR: "model-backend"
