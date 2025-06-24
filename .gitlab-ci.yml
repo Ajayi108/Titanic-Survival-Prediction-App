@@ -2,6 +2,7 @@ stages:
   - build
 
 build_docker_images:
+  stage: build 
   image: docker:latest
   services:
     - docker:dind
