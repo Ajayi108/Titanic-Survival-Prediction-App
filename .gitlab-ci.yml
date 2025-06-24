@@ -2,41 +2,31 @@ stages:
   - build
 
 variables:
-  # Define the base image path for your container registry
   CI_IMAGE_PREFIX: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
-  # This variable is required to enable TLS communication between the Docker client and the dind service.
   DOCKER_TLS_CERTDIR: "/certs"
-  # Set CI_REGISTRY explicitly for clarity, though it's usually auto-detected
-  # Make sure this matches the base URL of your registry, without the project path
   CI_REGISTRY: "mygit.th-deg.de:5050"
 
-# Define a hidden job to serve as a template
 .build_and_push_template:
   image: docker:latest
   services:
     - name: docker:dind
       alias: docker
   before_script:
-    # Exit immediately if a command exits with a non-zero status.
-    # Treat unset variables as an error when substituting.
-    # Enable pipeline's last return status to be the rightmost command's.
-    - set -exo pipefail # Added -e and pipefail for stricter error checking
+    - set -exo pipefail
 
-    # Wait for the Docker daemon to be ready.
     - while ! docker info; do sleep 1; done
-    # Log in to the GitLab container registry
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY" # Use the explicit CI_REGISTRY variable
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
 
-    # --- DEBUGGING STEP ---
     - echo "Listing files in the project root: $CI_PROJECT_DIR"
     - ls -la "$CI_PROJECT_DIR"
     - echo "---------------------"
   script:
-    - echo "Attempting to build image: $CI_REGISTRY_IMAGE from context: $CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
+    # Use single quotes around the entire string to prevent YAML from misinterpreting parts of it
+    - echo 'Attempting to build image: $CI_REGISTRY_IMAGE from context: $CI_PROJECT_DIR/$BUILD_CONTEXT_DIR'
     - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
     - echo "Build successful. Now attempting to push image: $CI_REGISTRY_IMAGE"
-    - docker push "$CI_REGISTRY_IMAGE" # This command should now be more likely to fail the job if there's an issue
-    - echo "Image push command completed. Check registry." # Confirm the push command finished
+    - docker push "$CI_REGISTRY_IMAGE"
+    - echo "Image push command completed. Check registry."
 
 build-web-frontend:
   stage: build
