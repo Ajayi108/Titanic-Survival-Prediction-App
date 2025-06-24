@@ -2,25 +2,46 @@ stages:
   - build
 
 variables:
-  CI_REGISTRY: "registry.mygit.th-deg.de"
-  CI_REGISTRY_IMAGE: "${CI_REGISTRY}/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai"
-  DOCKER_HOST: tcp://localhost:2375  # Use localhost instead of docker
-  DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  REGISTRY: $CI_REGISTRY
+  PROJECT_PATH: $CI_PROJECT_PATH
 
-build-images:
+.build_template: &build_template
   stage: build
-  image: docker:24.0.7
+  image: docker:24.0
   services:
-    - name: docker:24.0.7-dind
-      command: ["--host", "tcp://0.0.0.0:2375", "--storage-driver=overlay2"]
+    - docker:24.0-dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+build-web-frontend:
+  <<: *build_template
   script:
-    - sleep 5  # Wait for DinD to initialize
-    - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "${CI_REGISTRY_IMAGE}/web-frontend:latest" "./frontend"
-    - docker build -t "${CI_REGISTRY_IMAGE}/web-backend:latest" "./backend"
-    - docker build -t "${CI_REGISTRY_IMAGE}/model-backend:latest" "./model-backend"
-    - docker push "${CI_REGISTRY_IMAGE}/web-frontend:latest"
-    - docker push "${CI_REGISTRY_IMAGE}/web-backend:latest"
-    - docker push "${CI_REGISTRY_IMAGE}/model-backend:latest"
+    - cd web-frontend
+    - docker build -t $REGISTRY/$PROJECT_PATH/web-frontend:$CI_COMMIT_SHA .
+    - docker build -t $REGISTRY/$PROJECT_PATH/web-frontend:latest .
+    - docker push $REGISTRY/$PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
+    - docker push $REGISTRY/$PROJECT_PATH/web-frontend:latest
+
+build-web-backend:
+  <<: *build_template
+  script:
+    - cd web-backend
+    - docker build -t $REGISTRY/$PROJECT_PATH/web-backend:$CI_COMMIT_SHA .
+    - docker build -t $REGISTRY/$PROJECT_PATH/web-backend:latest .
+    - docker push $REGISTRY/$PROJECT_PATH/web-backend:$CI_COMMIT_SHA
+    - docker push $REGISTRY/$PROJECT_PATH/web-backend:latest
+
+build-model-backend:
+  <<: *build_template
+  script:
+    - cd model-backend
+    - docker build -t $REGISTRY/$PROJECT_PATH/model-backend:$CI_COMMIT_SHA .
+    - docker build -t $REGISTRY/$PROJECT_PATH/model-backend:latest .
+    - docker push $REGISTRY/$PROJECT_PATH/model-backend:$CI_COMMIT_SHA
+    - docker push $REGISTRY/$PROJECT_PATH/model-backend:latest
