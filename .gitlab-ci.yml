@@ -13,7 +13,6 @@ variables:
   image: docker:latest
   services:
     - name: docker:dind
-      # This alias is important for the Docker host connection
       alias: docker
   before_script:
     # Wait for the Docker daemon to be ready.
@@ -21,9 +20,10 @@ variables:
     # Log in to the GitLab container registry
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
-    # Build the Docker image.
-    # The -f flag now correctly points to "Dockerfile" inside the BUILD_CONTEXT directory.
-    - docker build -t "$CI_REGISTRY_IMAGE" -f "$DOCKERFILE_PATH" "$BUILD_CONTEXT"
+    # SIMPLIFIED BUILD COMMAND:
+    # We remove the '-f' flag. Docker will automatically look for a file named 'Dockerfile'
+    # at the root of the directory provided (the BUILD_CONTEXT).
+    - docker build -t "$CI_REGISTRY_IMAGE" "$BUILD_CONTEXT"
     # Push the Docker image to the container registry
     - docker push "$CI_REGISTRY_IMAGE"
 
@@ -33,20 +33,19 @@ build-web-frontend:
   variables:
     # Define the specific variables for this job
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-frontend:latest"
+    # This is the build context directory. Docker will look for 'web-frontend/Dockerfile'.
     BUILD_CONTEXT: "web-frontend"
-    # The Dockerfile is at the root of the BUILD_CONTEXT
-    DOCKERFILE_PATH: "web-frontend/Dockerfile"
 
 build-web-backend:
   <<: *build_and_push_definition
   variables:
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-backend:latest"
+    # This is the build context directory. Docker will look for 'web-backend/Dockerfile'.
     BUILD_CONTEXT: "web-backend"
-    DOCKERFILE_PATH: "web-backend/Dockerfile"
 
 build-model-backend:
   <<: *build_and_push_definition
   variables:
     CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/model-backend:latest"
+    # This is the build context directory. Docker will look for 'model-backend/Dockerfile'.
     BUILD_CONTEXT: "model-backend"
-    DOCKERFILE_PATH: "model-backend/Dockerfile"
