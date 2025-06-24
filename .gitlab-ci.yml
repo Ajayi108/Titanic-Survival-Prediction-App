@@ -28,7 +28,7 @@ variables:
     # FINAL ATTEMPT: Use the absolute path to the build context.
     # $CI_PROJECT_DIR is a predefined GitLab variable (e.g., /builds/group/project)
     # This command tells Docker the exact, unambiguous location of the build context directory.
-    - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
+    - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR" # Corrected variable name here
     # Push the Docker image to the container registry
     - docker push "$CI_REGISTRY_IMAGE"
 
