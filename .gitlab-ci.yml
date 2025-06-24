@@ -7,11 +7,6 @@ variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
 
-before_script:
-  - git submodule sync --recursive
-  - git submodule update --init --recursive
-  - apk add --no-cache git
-
 build-frontend:
   stage: build
   image: docker:24.0.7
@@ -21,6 +16,10 @@ build-frontend:
   variables:
     SERVICE_DIR: "web-frontend"
     IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-frontend:latest"
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+    - apk add --no-cache git
   script:
     - pwd
     - ls -la
@@ -39,6 +38,10 @@ build-backend:
   variables:
     SERVICE_DIR: "web-backend"
     IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-backend:latest"
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+    - apk add --no-cache git
   script:
     - pwd
     - ls -la
@@ -57,6 +60,10 @@ build-model-backend:
   variables:
     SERVICE_DIR: "model-backend"
     IMAGE_NAME: "${CI_REGISTRY_IMAGE}/model-backend:latest"
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+    - apk add --no-cache git
   script:
     - pwd
     - ls -la
