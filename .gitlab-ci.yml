@@ -1,18 +1,19 @@
-stages:
-  - build
-
-variables:
-  CI_IMAGE_PREFIX: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
-  DOCKER_TLS_CERTDIR: "/certs"
-  CI_REGISTRY: "mygit.th-deg.de:5050"
-
 .build_and_push_template:
   image: docker:latest
   services:
     - name: docker:dind
       alias: docker
-  before_script: | # Use a literal block scalar here
+  before_script: |
     set -exo pipefail
+
+    # Ping the registry host (DNS resolution check)
+    echo "Attempting to ping registry host: mygit.th-deg.de"
+    ping -c 3 mygit.th-deg.de || true # || true to prevent job failure if ping fails
+
+    # Check TCP connectivity to the registry port
+    echo "Attempting to telnet to registry: mygit.th-deg.de:5050"
+    # Using netcat (nc) as telnet might not be in docker:latest, and it's better for scripting
+    nc -vz mygit.th-deg.de 5050 || true # || true to prevent job failure if connection fails
 
     while ! docker info; do sleep 1; done
     docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
@@ -20,30 +21,10 @@ variables:
     echo "Listing files in the project root: $CI_PROJECT_DIR"
     ls -la "$CI_PROJECT_DIR"
     echo "---------------------"
-  script: | # Use a literal block scalar here too
+  script: |
     echo "Attempting to build image: $CI_REGISTRY_IMAGE from context: $CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
     docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
     echo "Build successful. Now attempting to push image: $CI_REGISTRY_IMAGE"
     docker push "$CI_REGISTRY_IMAGE"
     echo "Image push command completed. Check registry."
-
-build-web-frontend:
-  stage: build
-  extends: .build_and_push_template
-  variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-frontend:latest"
-    BUILD_CONTEXT_DIR: "web-frontend"
-
-build-web-backend:
-  stage: build
-  extends: .build_and_push_template
-  variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-backend:latest"
-    BUILD_CONTEXT_DIR: "web-backend"
-
-build-model-backend:
-  stage: build
-  extends: .build_and_push_template
-  variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/model-backend:latest"
-    BUILD_CONTEXT_DIR: "model-backend"
+# ... rest of your jobs ...
