@@ -25,9 +25,9 @@ build-frontend:
     - ls -la
     - echo "Building from directory: $SERVICE_DIR"
     - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
-    - docker push $IMAGE_NAME
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
+    - docker push "$IMAGE_NAME"
 
 build-backend:
   stage: build
@@ -47,9 +47,9 @@ build-backend:
     - ls -la
     - echo "Building from directory: $SERVICE_DIR"
     - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
-    - docker push $IMAGE_NAME
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
+    - docker push "$IMAGE_NAME"
 
 build-model-backend:
   stage: build
@@ -69,6 +69,6 @@ build-model-backend:
     - ls -la
     - echo "Building from directory: $SERVICE_DIR"
     - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
-    - docker push $IMAGE_NAME
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
+    - docker push "$IMAGE_NAME"
