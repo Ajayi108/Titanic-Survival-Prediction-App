@@ -1,74 +1,11 @@
 stages:
   - build
 
-variables:
-  CI_REGISTRY: "registry.mygit.th-deg.de"
-  CI_REGISTRY_IMAGE: "${CI_REGISTRY}/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai"
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-
 build-frontend:
   stage: build
   image: docker:24.0.7
   services:
     - name: docker:dind
       command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
-  variables:
-    SERVICE_DIR: "web-frontend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-frontend:latest"
-  before_script:
-    - git submodule sync --recursive
-    - git submodule update --init --recursive
-    - apk add --no-cache git
   script:
-    - pwd
-    - ls -la
-    - echo "Building from directory: $SERVICE_DIR"
-    - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
-    - docker push "$IMAGE_NAME"
-
-build-backend:
-  stage: build
-  image: docker:24.0.7
-  services:
-    - name: docker:dind
-      command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
-  variables:
-    SERVICE_DIR: "web-backend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-backend:latest"
-  before_script:
-    - git submodule sync --recursive
-    - git submodule update --init --recursive
-    - apk add --no-cache git
-  script:
-    - pwd
-    - ls -la
-    - echo "Building from directory: $SERVICE_DIR"
-    - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
-    - docker push "$IMAGE_NAME"
-
-build-model-backend:
-  stage: build
-  image: docker:24.0.7
-  services:
-    - name: docker:dind
-      command: ["--tls=false", "--host", "tcp://0.0.0.0:2375"]
-  variables:
-    SERVICE_DIR: "model-backend"
-    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/model-backend:latest"
-  before_script:
-    - git submodule sync --recursive
-    - git submodule update --init --recursive
-    - apk add --no-cache git
-  script:
-    - pwd
-    - ls -la
-    - echo "Building from directory: $SERVICE_DIR"
-    - docker info
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t "$IMAGE_NAME" "./$SERVICE_DIR"
-    - docker push "$IMAGE_NAME"
+    - echo "Hello World"
