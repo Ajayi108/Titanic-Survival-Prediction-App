@@ -37,6 +37,7 @@ build-web-backend:
     - docker push $REGISTRY/$PROJECT_PATH/web-backend:$CI_COMMIT_SHA
     - docker push $REGISTRY/$PROJECT_PATH/web-backend:latest
 
+
 build-model-backend:
   <<: *build_template
   script:
