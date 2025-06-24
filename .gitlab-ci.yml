@@ -2,43 +2,44 @@ stages:
   - build
 
 variables:
-  # Define the base image path for your container registry
-  CI_IMAGE_PREFIX: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
+  CI_REGISTRY: "registry.mygit.th-deg.de"
+  CI_REGISTRY_IMAGE: "${CI_REGISTRY}/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai"
 
-# This template job defines the common steps for building and pushing Docker images.
-.build_and_push_template: &build_and_push_definition
+build-frontend:
   stage: build
-  image: docker:latest
+  image: docker:24.0.7
   services:
     - docker:dind
-  before_script:
-    # Log in to the GitLab container registry
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  variables:
+    SERVICE_DIR: "frontend"
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-frontend:latest"
   script:
-    # Build the Docker image
-    - docker build -t "$CI_REGISTRY_IMAGE" -f "$DOCKERFILE_PATH" "$BUILD_CONTEXT"
-    # Push the Docker image to the container registry
-    - docker push "$CI_REGISTRY_IMAGE"
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
+    - docker push $IMAGE_NAME
 
-build-web-frontend:
-  # Inherit the common steps from the template
-  <<: *build_and_push_definition
+build-backend:
+  stage: build
+  image: docker:24.0.7
+  services:
+    - docker:dind
   variables:
-    # Define the specific variables for this job
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-frontend:latest"
-    DOCKERFILE_PATH: "web-frontend/Dockerfile"
-    BUILD_CONTEXT: "web-frontend"
-
-build-web-backend:
-  <<: *build_and_push_definition
-  variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-backend:latest"
-    DOCKERFILE_PATH: "web-backend/Dockerfile"
-    BUILD_CONTEXT: "web-backend"
+    SERVICE_DIR: "backend"
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/web-backend:latest"
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
+    - docker push $IMAGE_NAME
 
 build-model-backend:
-  <<: *build_and_push_definition
+  stage: build
+  image: docker:24.0.7
+  services:
+    - docker:dind
   variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/model-backend:latest"
-    DOCKERFILE_PATH: "model-backend/Dockerfile"
-    BUILD_CONTEXT: "model-backend"
+    SERVICE_DIR: "model-backend"
+    IMAGE_NAME: "${CI_REGISTRY_IMAGE}/model-backend:latest"
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t $IMAGE_NAME ./$SERVICE_DIR
+    - docker push $IMAGE_NAME
