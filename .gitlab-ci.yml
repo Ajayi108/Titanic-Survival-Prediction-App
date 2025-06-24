@@ -4,9 +4,7 @@ stages:
   - build
 
 variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
 
 # Simple test job to verify pipeline works
 test_pipeline:
@@ -17,56 +15,84 @@ test_pipeline:
     - echo "Commit $CI_COMMIT_SHA"
     - echo "Branch $CI_COMMIT_BRANCH"
 
-# Test Docker connection
+# Test Docker connection with newer version
 docker_test:
   stage: docker-test
-  image: docker:20.10.16
+  image: docker:24-dind
   services:
-    - docker:20.10.16-dind
+    - docker:24-dind
   variables:
-    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  before_script:
+    - dockerd-entrypoint.sh &
+    - sleep 10
+    - docker version
   script:
     - docker info
-    - docker run hello-world
+    - docker run --rm hello-world
     - echo "Docker is working!"
+
+# Alternative simpler Docker test
+docker_test_simple:
+  stage: docker-test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
+  script:
+    - docker version
+    - docker info
+    - docker run --rm alpine echo "Hello from Docker!"
+    - echo "Simple Docker test successful!"
 
 # Test registry login
 registry_test:
   stage: docker-test
-  image: docker:20.10.16
+  image: docker:latest
   services:
-    - docker:20.10.16-dind
+    - docker:dind
   variables:
     DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
   script:
-    - docker info
+    - docker version
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
     - echo "Registry login successful!"
+    - docker logout $CI_REGISTRY
 
 # Test building one service
 build_one_test:
   stage: build
-  image: docker:20.10.16
+  image: docker:latest
   services:
-    - docker:20.10.16-dind
+    - docker:dind
   variables:
     DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
   script:
+    - docker version
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
     - cd web-frontend
     - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:test .
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:test
+    - echo "Build test successful!"
   when: manual
 
 .build_template: &build_template
   stage: build
-  image: docker:20.10.16
+  image: docker:latest
   services:
-    - docker:20.10.16-dind
+    - docker:dind
   variables:
     DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
   before_script:
-    - docker info
+    - docker version
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -83,7 +109,6 @@ build-web-frontend:
     - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest .
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-frontend:latest
-  when: manual
 
 build-web-backend:
   <<: *build_template
@@ -93,7 +118,6 @@ build-web-backend:
     - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest .
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/web-backend:latest
-  when: manual
 
 build-model-backend:
   <<: *build_template
@@ -103,4 +127,3 @@ build-model-backend:
     - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest .
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY/$CI_PROJECT_PATH/model-backend:latest
-  when: manual
