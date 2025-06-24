@@ -11,22 +11,21 @@ variables:
   services:
     - name: docker:dind
       alias: docker
-  before_script:
-    - set -exo pipefail
+  before_script: | # Use a literal block scalar here
+    set -exo pipefail
 
-    - while ! docker info; do sleep 1; done
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    while ! docker info; do sleep 1; done
+    docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
 
-    - echo "Listing files in the project root: $CI_PROJECT_DIR"
-    - ls -la "$CI_PROJECT_DIR"
-    - echo "---------------------"
-  script:
-    # Use single quotes around the entire string to prevent YAML from misinterpreting parts of it
-    - echo 'Attempting to build image: $CI_REGISTRY_IMAGE from context: $CI_PROJECT_DIR/$BUILD_CONTEXT_DIR'
-    - docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
-    - echo "Build successful. Now attempting to push image: $CI_REGISTRY_IMAGE"
-    - docker push "$CI_REGISTRY_IMAGE"
-    - echo "Image push command completed. Check registry."
+    echo "Listing files in the project root: $CI_PROJECT_DIR"
+    ls -la "$CI_PROJECT_DIR"
+    echo "---------------------"
+  script: | # Use a literal block scalar here too
+    echo "Attempting to build image: $CI_REGISTRY_IMAGE from context: $CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
+    docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
+    echo "Build successful. Now attempting to push image: $CI_REGISTRY_IMAGE"
+    docker push "$CI_REGISTRY_IMAGE"
+    echo "Image push command completed. Check registry."
 
 build-web-frontend:
   stage: build
