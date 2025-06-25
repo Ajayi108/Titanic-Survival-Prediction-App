@@ -21,8 +21,7 @@ services:
       - model-backend
       - db
     environment:
-      - MODEL_BACKEND_URL=http://model-backend:2000/predict
-      - MODEL_BACKEND_TRAIN_URL=http://model-backend:2000/train
+      - MODEL_BACKEND_URL=http://model-backend:2000
       - DB_NAME=titanic_shrank_db
       - DB_USER=titanic_saver
       - DB_PASSWORD=TitanicMan
@@ -45,6 +44,9 @@ services:
     build: ./model-backend
     ports:
       - "2000:2000"
-
+    volumes:
+      - model-data:/app/models
+      
 volumes:
   db-data:
+  model-data:
