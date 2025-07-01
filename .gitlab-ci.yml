@@ -1,54 +1,26 @@
 stages:
   - build
 
-variables:
-  CI_IMAGE_PREFIX: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai
-  DOCKER_TLS_CERTDIR: "/certs"
-  CI_REGISTRY: "mygit.th-deg.de:5050"
-
-# Define a hidden job to serve as a template using 'extends'
-.build_and_push_template:
-  image: docker:latest
+build_and_push_model_backend:
+  stage: build
+  image: docker:24.0
   services:
-    - name: docker:dind
-      alias: docker
-  before_script: | # Use literal block scalar for scripts
-    set -exo pipefail
-    echo "Attempting to ping registry host: mygit.th-deg.de"
-    ping -c 3 mygit.th-deg.de || true # || true to prevent job failure if ping fails
-    echo "Attempting to telnet to registry: mygit.th-deg.de:5050"
-    nc -vz mygit.th-deg.de 5050 || true # || true to prevent job failure if connection fails
-
-    while ! docker info; do sleep 1; done
-    docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-
-    echo "Listing files in the project root: $CI_PROJECT_DIR"
-    ls -la "$CI_PROJECT_DIR"
-    echo "---------------------"
-  script: | # Use literal block scalar for scripts
-    echo "Attempting to build image: $CI_REGISTRY_IMAGE from context: $CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
-    docker build -t "$CI_REGISTRY_IMAGE" "$CI_PROJECT_DIR/$BUILD_CONTEXT_DIR"
-    echo "Build successful. Now attempting to push image: $CI_REGISTRY_IMAGE"
-    docker push "$CI_REGISTRY_IMAGE"
-    echo "Image push command completed. Check registry."
-
-build-web-frontend:
-  stage: build
-  extends: .build_and_push_template # Use 'extends' keyword
+    - docker:24.0-dind
   variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-frontend:latest"
-    BUILD_CONTEXT_DIR: "web-frontend"
-
-build-web-backend:
-  stage: build
-  extends: .build_and_push_template # Use 'extends' keyword
-  variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/web-backend:latest"
-    BUILD_CONTEXT_DIR: "web-backend"
-
-build-model-backend:
-  stage: build
-  extends: .build_and_push_template # Use 'extends' keyword
-  variables:
-    CI_REGISTRY_IMAGE: "$CI_IMAGE_PREFIX/model-backend:latest"
-    BUILD_CONTEXT_DIR: "model-backend"
+    # Target the model-backend repo's registry (not docker-compose repo)
+    MODEL_BACKEND_IMAGE: mygit.th-deg.de:5050/schober-teaching/student-projects/ain-23-software-engineering/ss-25/icebergai/model-backend:latest
+  before_script:
+    - apk add --no-cache git
+    # Use the cicdtoken to authenticate Git submodule access
+    - git config --global http.extraheader "PRIVATE-TOKEN: ${cicdtoken}"
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    # Log in to GitLab Container Registry using the bot account
+    - docker login -u "group_18068_bot_ad5513e4e5687a027b8876f444416439a" -p "${cicdtoken}" mygit.th-deg.de:5050
+    # Build the model-backend image from its submodule
+    - docker build -t $MODEL_BACKEND_IMAGE ./model-backend
+    # Push to model-backend's registry
+    - docker push $MODEL_BACKEND_IMAGE
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"  # Adjust if your default branch is different
