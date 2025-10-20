@@ -1,14 +1,14 @@
 [submodule "model-backend"]
     path = model-backend
-    url = https://mygit.th-deg.de/schober-teaching/student-projects/ain-23-software-engineering/ss-25/IcebergAI/model-backend.git
+    url = https://github.com/Ajayi108/Titanic_Modelbackend
     branch = main
 
 [submodule "web-backend"]
     path = web-backend
-    url = https://mygit.th-deg.de/schober-teaching/student-projects/ain-23-software-engineering/ss-25/IcebergAI/web-backend.git
+    url = https://github.com/Ajayi108/Titanic_webbackend
     branch = main
 
 [submodule "web-frontend"]
     path = web-frontend
-    url = https://mygit.th-deg.de/schober-teaching/student-projects/ain-23-software-engineering/ss-25/IcebergAI/web-frontend.git
+    url = https://github.com/Ajayi108/Titanic_Frontend
     branch = main
