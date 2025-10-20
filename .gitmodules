@@ -1,14 +1,14 @@
 [submodule "model-backend"]
     path = model-backend
-    url = https://github.com/Ajayi108/Titanic_Modelbackend
+	url = https://github.com/Ajayi108/Titanic_Modelbackend.git
     branch = main
 
 [submodule "web-backend"]
     path = web-backend
-    url = https://github.com/Ajayi108/Titanic_webbackend
+	url = https://github.com/Ajayi108/Titanic_webbackend.git
     branch = main
 
 [submodule "web-frontend"]
     path = web-frontend
-    url = https://github.com/Ajayi108/Titanic_Frontend
+	url = https://github.com/Ajayi108/Titanic_Frontend.git
     branch = main
